@@ -29,6 +29,9 @@ public class PointerControl {
     // Indicates if the pointer is currently stuck at side
     private int stuckAtSide = 0;
 
+    // Hide the cursor even in mouse mode (useful for D-pad-only navigation)
+    private boolean cursorHidden = false;
+
     // pointer location in screen coordinates
     private final PointF mPointerLocation = new PointF();
 
@@ -50,9 +53,11 @@ public class PointerControl {
      */
     public void reset () {
         mCursorView.updateFromPreferences();
-        mPointerLocation.x = mPointerLayerView.getWidth() / 2f;
-        mPointerLocation.y = mPointerLayerView.getHeight() / 2f;
-        Log.i(LOG_TAG, "View W, H: " + mPointerLayerView.getWidth() + " " + mPointerLayerView.getHeight());
+        int width = viewWidth();
+        int height = viewHeight();
+        mPointerLocation.x = width / 2f;
+        mPointerLocation.y = height / 2f;
+        Log.i(LOG_TAG, "View W, H: " + width + " " + height);
         Log.i(LOG_TAG, "Location X, Y: " + mPointerLocation.x + " " + mPointerLocation.y);
         mCursorView.updatePosition(mPointerLocation);
     }
@@ -64,9 +69,20 @@ public class PointerControl {
     }
 
     public void reappear () {
-        if (mCursorView.getVisibility() == View.INVISIBLE) {
+        if (!cursorHidden && mCursorView.getVisibility() == View.INVISIBLE) {
             mCursorView.setVisibility(View.VISIBLE);
         }
+    }
+
+    public void setCursorHidden(boolean hidden) {
+        cursorHidden = hidden;
+        if (hidden) {
+            disappear();
+        }
+    }
+
+    public boolean isCursorHidden() {
+        return cursorHidden;
     }
 
     public int isStuckAtSide() {
@@ -78,46 +94,49 @@ public class PointerControl {
         int movementX = (int) (dirX[direction] * ((momentum)));
         int movementY = (int) (dirY[direction] * ((momentum)));
 
+        int width = viewWidth();
+        int height = viewHeight();
+
         // free mode
         if (!isBordered) {
             mPointerLocation.x += movementX;
-            if (mPointerLocation.x > mPointerLayerView.getWidth()) {
-                mPointerLocation.x -= mPointerLayerView.getWidth();
+            if (mPointerLocation.x > width) {
+                mPointerLocation.x -= width;
             } else if (mPointerLocation.x < 0) {
-                mPointerLocation.x += mPointerLayerView.getWidth();
+                mPointerLocation.x += width;
             }
 
             mPointerLocation.y += movementY;
-            if (mPointerLocation.y > mPointerLayerView.getHeight()) {
-                mPointerLocation.y -= mPointerLayerView.getHeight();
+            if (mPointerLocation.y > height) {
+                mPointerLocation.y -= height;
             } else if (mPointerLocation.y < 0) {
-                mPointerLocation.y += mPointerLayerView.getHeight();
+                mPointerLocation.y += height;
             }
         }
         else {
             stuckAtSide = 0;
 
-            if (mPointerLocation.x + movementX >= 0 && mPointerLocation.x + movementX <= mPointerLayerView.getWidth())
+            if (mPointerLocation.x + movementX >= 0 && mPointerLocation.x + movementX <= width)
                 mPointerLocation.x += movementX;
             else {
-                if (mPointerLocation.x < (mPointerLayerView.getWidth() / 2f)) {
+                if (mPointerLocation.x < (width / 2f)) {
                     stuckAtSide = KeyEvent.KEYCODE_DPAD_LEFT;
                     mPointerLocation.x = 0;
                 }
                 else {
                     stuckAtSide = KeyEvent.KEYCODE_DPAD_RIGHT;
-                    mPointerLocation.x = mPointerLayerView.getWidth();
+                    mPointerLocation.x = width;
                 }
             }
-            if (mPointerLocation.y + movementY >= 0 && mPointerLocation.y + movementY <= mPointerLayerView.getHeight())
+            if (mPointerLocation.y + movementY >= 0 && mPointerLocation.y + movementY <= height)
                 mPointerLocation.y += movementY;
             else {
-                if (mPointerLocation.y < (mPointerLayerView.getHeight() / 2f)) {
+                if (mPointerLocation.y < (height / 2f)) {
                     stuckAtSide = KeyEvent.KEYCODE_DPAD_UP;
                     mPointerLocation.y = 0;
                 } else {
                     stuckAtSide = KeyEvent.KEYCODE_DPAD_DOWN;
-                    mPointerLocation.y = mPointerLayerView.getHeight();
+                    mPointerLocation.y = height;
                 }
             }
         }
@@ -131,7 +150,23 @@ public class PointerControl {
     }
 
     PointF getCenterPointOfView() {
-        return new PointF(mPointerLayerView.getWidth() / 2f,mPointerLayerView.getWidth() / 2f);
+        return new PointF(viewWidth() / 2f, viewHeight() / 2f);
+    }
+
+    private int viewWidth() {
+        int width = mPointerLayerView.getWidth();
+        if (width <= 0) {
+            width = mPointerLayerView.getResources().getDisplayMetrics().widthPixels;
+        }
+        return Math.max(2, width);
+    }
+
+    private int viewHeight() {
+        int height = mPointerLayerView.getHeight();
+        if (height <= 0) {
+            height = mPointerLayerView.getResources().getDisplayMetrics().heightPixels;
+        }
+        return Math.max(2, height);
     }
 
     public void setIsBordered(boolean isBordered) {

@@ -44,7 +44,7 @@ public class ShellInputDispatchMouseEngine extends BaseEngine {
     }
 
     private void sendShellInput(String command) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && adbHandler != null) {
             Runnable runInput = new Runnable() {
                 @Override
                 public void run() {
@@ -88,16 +88,21 @@ public class ShellInputDispatchMouseEngine extends BaseEngine {
     }
 
     public void notifyUser(String text) {
+        if (mainHandler == null) {
+            return;
+        }
         mainHandler.post(new Runnable() {
             @Override
             public void run() {
-                Toast.makeText(mService.getApplicationContext(), text, Toast.LENGTH_SHORT).show();
+                if (mService != null) {
+                    Toast.makeText(mService.getApplicationContext(), text, Toast.LENGTH_SHORT).show();
+                }
             }
         });
     }
 
     public void shellSwipe(Integer x1, Integer y1, Integer x2, Integer y2, Integer duration) {
-        sendShellInput("swipe " + x1.toString() + " " + y1.toString() + " " + x2.toString() + " " + y2.toString());
+        sendShellInput("swipe " + x1 + " " + y1 + " " + x2 + " " + y2 + " " + duration);
     }
 
     public void shellTap(Integer x, Integer y) {
@@ -135,7 +140,11 @@ public class ShellInputDispatchMouseEngine extends BaseEngine {
                     pointer.x + (momentum + 75) * PointerControl.dirX[direction],
                     pointer.y + (momentum + 75) * PointerControl.dirY[direction]);
 
-            shellSwipe((int) pointer.x, (int) pointer.y, (int) lineDirection.x, (int) lineDirection.y, DURATION);
+            int width = screenWidth();
+            int height = screenHeight();
+            int endX = Math.max(0, Math.min(width - 1, (int) lineDirection.x));
+            int endY = Math.max(0, Math.min(height - 1, (int) lineDirection.y));
+            shellSwipe((int) pointer.x, (int) pointer.y, endX, endY, DURATION);
         }
         return 0;
     }
@@ -147,6 +156,32 @@ public class ShellInputDispatchMouseEngine extends BaseEngine {
             shellTap((int) pointer.x, (int) pointer.y);
         }
         return 0;
+    }
+
+    @Override
+    protected int longClick(KeyEvent ke) {
+        if (mService != null) {
+            PointF pointer = mPointerControl.getPointerLocation();
+            shellSwipe((int) pointer.x, (int) pointer.y,
+                    (int) pointer.x, (int) pointer.y, 650);
+        }
+        return 0;
+    }
+
+    private int screenWidth() {
+        int width = mOverlayView.getWidth();
+        if (width <= 1) {
+            width = mOverlayView.getResources().getDisplayMetrics().widthPixels;
+        }
+        return Math.max(2, width);
+    }
+
+    private int screenHeight() {
+        int height = mOverlayView.getHeight();
+        if (height <= 1) {
+            height = mOverlayView.getResources().getDisplayMetrics().heightPixels;
+        }
+        return Math.max(2, height);
     }
 
     @Override

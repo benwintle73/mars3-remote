@@ -2,6 +2,7 @@ package io.github.virresh.matvt.engine.impl;
 
 import android.accessibilityservice.AccessibilityService;
 import android.view.KeyEvent;
+import android.view.accessibility.AccessibilityEvent;
 
 import androidx.annotation.NonNull;
 
@@ -10,4 +11,7 @@ public interface MouseEmulationEngine {
     void updateFromPreferences();
     boolean perform (KeyEvent keyEvent);
     void destroy();
+
+    default void onAccessibilityEvent(AccessibilityEvent event) {
+    }
 }

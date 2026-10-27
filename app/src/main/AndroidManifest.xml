@@ -37,7 +37,7 @@
             android:launchMode="singleTop"/>
         <service
             android:name=".services.MouseEventService"
-            android:label="Mouse Toggle Service"
+            android:label="@string/accessibility_service_label"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
             android:exported="false">
             <intent-filter>

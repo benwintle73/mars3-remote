@@ -33,14 +33,16 @@ public class GuiActivity extends AppCompatActivity {
 
     CountDownTimer repopulate;
     CheckBox cb_mouse_bordered, cb_disable_bossKey, cb_behaviour_bossKey, cb_hide_toasts;
+    CheckBox cb_hide_cursor, cb_netflix_mode, cb_netflix_fallback;
     TextView gui_acc_perm, gui_acc_serv, gui_overlay_perm, gui_overlay_serv, gui_about;
 
     EditText et_boss_override, et_confirm_override;
-    Button bt_saveBossKeyValue, bt_saveConfirmKeyValue;
+    Button bt_saveBossKeyValue, bt_saveConfirmKeyValue, bt_dump_ui;
 
     Spinner sp_mouse_icon, sp_engine_type;
     SeekBar dsbar_mouse_size;
     SeekBar dsbar_scroll_speed;
+    SeekBar dsbar_cursor_speed;
 
     MouseEventService mService;
     private AppPreferences appPreferences;
@@ -70,11 +72,16 @@ public class GuiActivity extends AppCompatActivity {
         cb_hide_toasts = findViewById(R.id.cb_hide_toasts);
         cb_disable_bossKey = findViewById(R.id.cb_disable_bossKey);
         cb_behaviour_bossKey = findViewById(R.id.cb_behaviour_bossKey);
+        cb_hide_cursor = findViewById(R.id.cb_hide_cursor);
+        cb_netflix_mode = findViewById(R.id.cb_netflix_mode);
+        cb_netflix_fallback = findViewById(R.id.cb_netflix_fallback);
 
         sp_mouse_icon = findViewById(R.id.sp_mouse_icon);
         sp_engine_type = findViewById(R.id.sp_engine_type);
         dsbar_mouse_size = findViewById(R.id.dsbar_mouse_size);
         dsbar_scroll_speed = findViewById(R.id.dsbar_mouse_scspeed);
+        dsbar_cursor_speed = findViewById(R.id.dsbar_cursor_speed);
+        bt_dump_ui = findViewById(R.id.bt_dump_ui);
 
         // don't like to advertise in the product, but need to mention here
         // need to increase visibility of the open source version
@@ -97,10 +104,18 @@ public class GuiActivity extends AppCompatActivity {
             public void onClick(View view) {
                 String dat = et_boss_override.getText().toString();
                 dat = dat.replaceAll("[^0-9]", "");
-                int keyValue; if (dat.isEmpty()) keyValue = KeyEvent.KEYCODE_VOLUME_MUTE;
-                else keyValue = Integer.parseInt(dat);
-                appPreferences.setOverrideStatus(appPreferences.getBossKeyValue() != 164);
+                int keyValue;
+                try {
+                    keyValue = dat.isEmpty()
+                            ? KeyEvent.KEYCODE_VOLUME_MUTE
+                            : Integer.parseInt(dat);
+                } catch (NumberFormatException e) {
+                    keyValue = KeyEvent.KEYCODE_VOLUME_MUTE;
+                }
+                appPreferences.setBossKeyDisabled(false);
+                appPreferences.setOverrideStatus(true);
                 appPreferences.setBossKeyValue(keyValue);
+                cb_disable_bossKey.setChecked(false);
                 Toast.makeText(GuiActivity.this, "New Boss key is : "+keyValue, Toast.LENGTH_SHORT).show();
                 updateFromPreferences();
             }
@@ -111,8 +126,14 @@ public class GuiActivity extends AppCompatActivity {
             public void onClick(View view) {
                 String dat = et_confirm_override.getText().toString();
                 dat = dat.replaceAll("[^0-9]", "");
-                int keyValue; if (dat.isEmpty()) keyValue = KeyEvent.KEYCODE_DPAD_CENTER;
-                else keyValue = Integer.parseInt(dat);
+                int keyValue;
+                try {
+                    keyValue = dat.isEmpty()
+                            ? KeyEvent.KEYCODE_DPAD_CENTER
+                            : Integer.parseInt(dat);
+                } catch (NumberFormatException e) {
+                    keyValue = KeyEvent.KEYCODE_DPAD_CENTER;
+                }
                 appPreferences.setConfirmKeyValue(keyValue);
                 Toast.makeText(GuiActivity.this, "New confirm key is : "+keyValue, Toast.LENGTH_SHORT).show();
                 updateFromPreferences();
@@ -181,6 +202,26 @@ public class GuiActivity extends AppCompatActivity {
             public void onStopTrackingTouch(SeekBar seekBar) {}
         });
 
+        dsbar_cursor_speed.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if (fromUser) {
+                    int speed = Math.max(1, progress);
+                    if (speed != progress) {
+                        seekBar.setProgress(speed);
+                    }
+                    appPreferences.setCursorSpeed(speed);
+                    updateFromPreferences();
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {}
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+
         cb_mouse_bordered.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
@@ -213,6 +254,43 @@ public class GuiActivity extends AppCompatActivity {
             }
         });
 
+        cb_hide_cursor.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean value) {
+                appPreferences.setCursorHidden(value);
+                updateFromPreferences();
+            }
+        });
+
+        cb_netflix_mode.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean value) {
+                appPreferences.setNetflixModeEnabled(value);
+                updateFromPreferences();
+            }
+        });
+
+        cb_netflix_fallback.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean value) {
+                appPreferences.setNetflixFallbackEnabled(value);
+                updateFromPreferences();
+            }
+        });
+
+        bt_dump_ui.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mService = MouseEventService.getInstance();
+                if (mService == null) {
+                    Toast.makeText(GuiActivity.this,
+                            "Accessibility service is not running", Toast.LENGTH_SHORT).show();
+                } else {
+                    mService.dumpUiTree();
+                }
+            }
+        });
+
         populateText();
         findViewById(R.id.gui_setup_perm).setOnClickListener(new View.OnClickListener() {
             @Override
@@ -240,6 +318,9 @@ public class GuiActivity extends AppCompatActivity {
         int scrollSpeed = appPreferences.getScrollSpeed();
         dsbar_scroll_speed.setProgress(Math.max(Math.min(scrollSpeed, dsbar_scroll_speed.getMax()), 0));
 
+        int cursorSpeed = appPreferences.getCursorSpeed();
+        dsbar_cursor_speed.setProgress(Math.max(Math.min(cursorSpeed, dsbar_cursor_speed.getMax()), 1));
+
         boolean bordered = appPreferences.getMouseBordered();
         cb_mouse_bordered.setChecked(bordered);
 
@@ -251,18 +332,16 @@ public class GuiActivity extends AppCompatActivity {
 
         boolean bossKeyBehaviour = appPreferences.isBossKeySetToToggle();
         cb_behaviour_bossKey.setChecked(bossKeyBehaviour);
+
+        cb_hide_cursor.setChecked(appPreferences.isCursorHidden());
+        cb_netflix_mode.setChecked(appPreferences.isNetflixModeEnabled());
+        cb_netflix_fallback.setChecked(appPreferences.isNetflixFallbackEnabled());
     }
 
     private void askPermissions() {
-        if (AccessibilityUtils.isOverlayDisabled(this)) {
-            try {
-                startActivityForResult(new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION), 
-                        ACTION_MANAGE_OVERLAY_PERMISSION_REQUEST_CODE);
-            } catch (Exception unused) {
-                Toast.makeText(this, "Overlay Permission Handler not Found", Toast.LENGTH_SHORT).show();
-            }
-        }
-        if (!AccessibilityUtils.isOverlayDisabled(this) && AccessibilityUtils.isAccessibilityDisabled(this)) {
+        // TYPE_ACCESSIBILITY_OVERLAY does not need SYSTEM_ALERT_WINDOW on
+        // Android 8+, so only the accessibility service is mandatory.
+        if (AccessibilityUtils.isAccessibilityDisabled(this)) {
             checkAccPerms();
         }
     }
@@ -279,28 +358,24 @@ public class GuiActivity extends AppCompatActivity {
     }
 
     public void populateText() {
-        if (AccessibilityUtils.isOverlayDisabled(this))  gui_overlay_perm.setText(R.string.perm_overlay_denied);
-        else gui_overlay_perm.setText(R.string.perm_overlay_allowed);
+        boolean accDisabled = AccessibilityUtils.isAccessibilityDisabled(this);
 
-        if (AccessibilityUtils.isAccessibilityDisabled(this)) {
+        if (accDisabled) {
             gui_acc_perm.setText(R.string.perm_acc_denied);
             gui_acc_serv.setText(R.string.serv_acc_denied);
-            gui_overlay_serv.setText(R.string.serv_overlay_denied); } 
-        else gui_acc_perm.setText(R.string.perm_acc_allowed);
-
-        if (AccessibilityUtils.isAccessibilityDisabled(this) && AccessibilityUtils.isOverlayDisabled(this)) {
-            gui_acc_perm.setText(R.string.perm_acc_denied);
-            gui_acc_serv.setText(R.string.serv_acc_denied);
-            gui_overlay_perm.setText(R.string.perm_overlay_denied);
             gui_overlay_serv.setText(R.string.serv_overlay_denied);
-        }
-
-        if (!AccessibilityUtils.isAccessibilityDisabled(this) && !AccessibilityUtils.isAccessibilityDisabled(this)) {
+            findViewById(R.id.gui_setup_perm).setVisibility(View.VISIBLE);
+        } else {
             gui_acc_perm.setText(R.string.perm_acc_allowed);
             gui_acc_serv.setText(R.string.serv_acc_allowed);
-            gui_overlay_perm.setText(R.string.perm_overlay_allowed);
             gui_overlay_serv.setText(R.string.serv_overlay_allowed);
             findViewById(R.id.gui_setup_perm).setVisibility(View.GONE);
+        }
+
+        if (AccessibilityUtils.isOverlayDisabled(this)) {
+            gui_overlay_perm.setText(R.string.overlay_optional);
+        } else {
+            gui_overlay_perm.setText(R.string.perm_overlay_allowed);
         }
     }
 
@@ -321,16 +396,38 @@ public class GuiActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        //Checking services status
+        mService = MouseEventService.getInstance();
         checkServiceStatus();
 
         if (et_boss_override != null)
             et_boss_override.setText(appPreferences.getBossKeyValue()+"");
         if (et_confirm_override != null)
             et_confirm_override.setText(appPreferences.getConfirmKeyValue()+"");
+        populateText();
+    }
+
+    @Override
+    protected void onPause() {
+        if (repopulate != null) {
+            repopulate.cancel();
+            repopulate = null;
+        }
+        super.onPause();
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (repopulate != null) {
+            repopulate.cancel();
+            repopulate = null;
+        }
+        super.onDestroy();
     }
 
     private void checkServiceStatus() {
+        if (repopulate != null) {
+            repopulate.cancel();
+        }
         //checking for changed every 2 sec
         repopulate = new CountDownTimer(2000, 2000) {
             @Override
@@ -338,7 +435,9 @@ public class GuiActivity extends AppCompatActivity {
             @Override
             public void onFinish() {
                 populateText();
-                repopulate.start(); //restarting the timer
+                if (repopulate != null) {
+                    repopulate.start(); //restarting the timer
+                }
             }
         };
         repopulate.start();

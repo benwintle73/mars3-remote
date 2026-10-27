@@ -11,9 +11,12 @@ import android.widget.RelativeLayout;
 public class OverlayView extends RelativeLayout {
     private static String LOG_TAG = "MATVT Overlay";
 
+    private final WindowManager windowManager;
+
     public OverlayView(Context context) {
         super(context);
         WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+        windowManager = wm;
         WindowManager.LayoutParams overlayParams = new WindowManager.LayoutParams();
         overlayParams.width = WindowManager.LayoutParams.MATCH_PARENT;
         overlayParams.height = WindowManager.LayoutParams.MATCH_PARENT;
@@ -31,7 +34,24 @@ public class OverlayView extends RelativeLayout {
             overlayParams.type = WindowManager.LayoutParams.TYPE_PRIORITY_PHONE;
         }
 
-        wm.addView(this, overlayParams);
+        if (wm != null) {
+            try {
+                wm.addView(this, overlayParams);
+            } catch (RuntimeException e) {
+                Log.e(LOG_TAG, "Could not add accessibility overlay", e);
+            }
+        }
+    }
+
+    public void destroy() {
+        if (windowManager == null) {
+            return;
+        }
+        try {
+            windowManager.removeView(this);
+        } catch (IllegalArgumentException e) {
+            Log.w(LOG_TAG, "Overlay was already removed", e);
+        }
     }
 
     public void addFullScreenLayer (View v) {

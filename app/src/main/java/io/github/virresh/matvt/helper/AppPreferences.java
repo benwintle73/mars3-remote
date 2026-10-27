@@ -18,6 +18,10 @@ public class AppPreferences {
     private static final String PREF_KEY_CB_BEHAVIOUR_BOSSKEY = "CB_BEHAVIOUR_BOSSKEY";
     private static final String PREF_KEY_ENGINE_TYPE = "ENGINE_TYPE";
     private static final String PREF_KEY_CONFIRM_KEY = "CONFIRM_KEY";
+    private static final String PREF_KEY_CURSOR_SPEED = "CURSOR_SPEED";
+    private static final String PREF_KEY_HIDE_CURSOR = "HIDE_CURSOR";
+    private static final String PREF_KEY_NETFLIX_MODE = "NETFLIX_MODE";
+    private static final String PREF_KEY_NETFLIX_FALLBACK = "NETFLIX_FALLBACK";
 
     private final SharedPreferences sharedPreferences;
 
@@ -118,5 +122,37 @@ public class AppPreferences {
 
     public void setConfirmKeyValue(int val) {
         sharedPreferences.edit().putInt(PREF_KEY_CONFIRM_KEY, val).apply();
+    }
+
+    public int getCursorSpeed() {
+        return sharedPreferences.getInt(PREF_KEY_CURSOR_SPEED, 8);
+    }
+
+    public void setCursorSpeed(int val) {
+        sharedPreferences.edit().putInt(PREF_KEY_CURSOR_SPEED, Math.max(1, val)).apply();
+    }
+
+    public boolean isCursorHidden() {
+        return sharedPreferences.getBoolean(PREF_KEY_HIDE_CURSOR, false);
+    }
+
+    public void setCursorHidden(boolean val) {
+        sharedPreferences.edit().putBoolean(PREF_KEY_HIDE_CURSOR, val).apply();
+    }
+
+    public boolean isNetflixModeEnabled() {
+        return sharedPreferences.getBoolean(PREF_KEY_NETFLIX_MODE, true);
+    }
+
+    public void setNetflixModeEnabled(boolean val) {
+        sharedPreferences.edit().putBoolean(PREF_KEY_NETFLIX_MODE, val).apply();
+    }
+
+    public boolean isNetflixFallbackEnabled() {
+        return sharedPreferences.getBoolean(PREF_KEY_NETFLIX_FALLBACK, true);
+    }
+
+    public void setNetflixFallbackEnabled(boolean val) {
+        sharedPreferences.edit().putBoolean(PREF_KEY_NETFLIX_FALLBACK, val).apply();
     }
 }

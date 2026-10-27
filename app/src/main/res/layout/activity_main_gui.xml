@@ -167,7 +167,7 @@
                 android:foregroundTint="@color/white"
                 android:max="20"
                 android:nextFocusUp="@id/dsbar_mouse_size"
-                android:nextFocusDown="@id/sp_mouse_icon"
+                android:nextFocusDown="@id/dsbar_cursor_speed"
                 android:progress="4"
                 android:progressBackgroundTint="@color/white_2"
                 android:progressTint="@color/white"
@@ -175,6 +175,77 @@
                 android:tickMarkTint="@color/white" />
 
         </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/cursor_speed"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Cursor Speed (Slow to Fast)"
+                android:textAlignment="textStart"
+                android:textColor="@color/white"
+                android:textSize="20.0sp" />
+
+            <SeekBar
+                android:id="@+id/dsbar_cursor_speed"
+                style="@style/Widget.AppCompat.SeekBar.Discrete"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:focusable="true"
+                android:foregroundTint="@color/white"
+                android:max="20"
+                android:nextFocusUp="@id/dsbar_mouse_scspeed"
+                android:nextFocusDown="@id/cb_hide_cursor"
+                android:progress="8"
+                android:progressBackgroundTint="@color/white_2"
+                android:progressTint="@color/white"
+                android:thumbTint="@color/white"
+                android:tickMarkTint="@color/white" />
+
+        </LinearLayout>
+
+        <CheckBox
+            android:id="@+id/cb_hide_cursor"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:buttonTint="@color/white"
+            android:layoutDirection="rtl"
+            android:nextFocusUp="@id/dsbar_cursor_speed"
+            android:nextFocusDown="@id/cb_netflix_mode"
+            android:text="Hide mouse cursor when using D-pad"
+            android:textColor="@color/white"
+            android:textSize="20sp" />
+
+        <CheckBox
+            android:id="@+id/cb_netflix_mode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:buttonTint="@color/white"
+            android:layoutDirection="rtl"
+            android:nextFocusUp="@id/cb_hide_cursor"
+            android:nextFocusDown="@id/cb_netflix_fallback"
+            android:text="Netflix smart D-pad navigation"
+            android:textColor="@color/white"
+            android:textSize="20sp" />
+
+        <CheckBox
+            android:id="@+id/cb_netflix_fallback"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:buttonTint="@color/white"
+            android:layoutDirection="rtl"
+            android:nextFocusUp="@id/cb_netflix_mode"
+            android:nextFocusDown="@id/sp_mouse_icon"
+            android:text="Coordinate fallback if Netflix exposes no items"
+            android:textColor="@color/white"
+            android:textSize="20sp" />
 
         <LinearLayout
             android:id="@+id/mouse_icon"
@@ -200,8 +271,8 @@
                 android:drawSelectorOnTop="true"
                 android:popupBackground="@drawable/focus_selector"
                 android:dropDownWidth="match_parent"
-                android:nextFocusUp="@id/dsbar_mouse_scspeed"
-                android:nextFocusDown="@id/cb_border_window"
+                android:nextFocusUp="@id/cb_netflix_fallback"
+                android:nextFocusDown="@id/sp_engine_type"
                 android:spinnerMode="dropdown" />
         </LinearLayout>
 
@@ -230,16 +301,30 @@
                 android:popupBackground="@drawable/focus_selector"
                 android:dropDownWidth="match_parent"
                 android:nextFocusUp="@id/sp_mouse_icon"
-                android:nextFocusDown="@id/cb_border_window"
+                android:nextFocusDown="@id/bt_dump_ui"
                 android:spinnerMode="dropdown" />
         </LinearLayout>
+
+        <Button
+            android:id="@+id/bt_dump_ui"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="10.0dip"
+            android:background="@drawable/bg_button"
+            android:nextFocusUp="@id/sp_engine_type"
+            android:nextFocusDown="@id/cb_border_window"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:text="DUMP UI TREE (DEBUG)"
+            android:textColor="@color/white" />
 
         <CheckBox
             android:id="@+id/cb_border_window"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
-            android:nextFocusUp="@id/sp_mouse_icon"
+            android:nextFocusUp="@id/bt_dump_ui"
             android:buttonTint="@color/white"
             android:layoutDirection="rtl"
             android:text="Bordered Window"

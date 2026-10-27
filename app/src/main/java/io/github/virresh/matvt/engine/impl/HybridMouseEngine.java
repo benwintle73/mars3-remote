@@ -38,7 +38,17 @@ public class HybridMouseEngine extends BaseEngine {
                     pointer.x + (momentum + 75) * PointerControl.dirX[direction],
                     pointer.y + (momentum + 75) * PointerControl.dirY[direction]);
 
-            shellSwipe((int) pointer.x, (int) pointer.y, (int) lineDirection.x, (int) lineDirection.y, DURATION);
+            int width = mOverlayView.getWidth();
+            int height = mOverlayView.getHeight();
+            if (width <= 1) {
+                width = mOverlayView.getResources().getDisplayMetrics().widthPixels;
+            }
+            if (height <= 1) {
+                height = mOverlayView.getResources().getDisplayMetrics().heightPixels;
+            }
+            int endX = Math.max(0, Math.min(width - 1, (int) lineDirection.x));
+            int endY = Math.max(0, Math.min(height - 1, (int) lineDirection.y));
+            shellSwipe((int) pointer.x, (int) pointer.y, endX, endY, DURATION);
 
             swipeGestureCoolDown = new CountDownTimer(DURATION + 200, 100) {
                 @Override
@@ -62,6 +72,24 @@ public class HybridMouseEngine extends BaseEngine {
             shellTap((int) pointer.x, (int) pointer.y);
         }
         return 0;
+    }
+
+    @Override
+    protected int longClick(KeyEvent ke) {
+        if (mService != null) {
+            PointF pointer = mPointerControl.getPointerLocation();
+            executeShellCommand("input swipe " + (int) pointer.x + " " + (int) pointer.y
+                    + " " + (int) pointer.x + " " + (int) pointer.y + " 650");
+        }
+        return 0;
+    }
+
+    @Override
+    public void destroy() {
+        if (swipeGestureCoolDown != null) {
+            swipeGestureCoolDown.cancel();
+        }
+        super.destroy();
     }
 
     private void shellTap(int x, int y) {

@@ -1,58 +1,48 @@
 package io.github.virresh.matvt.helper;
 
-import android.app.AlertDialog;
 import android.content.Context;
-import android.content.DialogInterface;
-import android.os.Build;
+import android.content.Intent;
 import android.view.KeyEvent;
-import android.view.WindowManager;
-import android.widget.Toast;
 
-import io.github.virresh.matvt.R;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+
 import io.github.virresh.matvt.services.MouseEventService;
 
+/**
+ * Watches key events while the key-detection screen is open and forwards a
+ * long hold to that activity. The dialog must live in an activity context;
+ * showing an AlertDialog from an accessibility service is unreliable on
+ * Android 8+.
+ */
 public class KeyEventHandler {
-    private final AppPreferences appPreferences;
     private final Context context;
-    private final MouseEventService mouseEventService;
+    private int lastKeyCode = -1;
+    private boolean holdBroadcast;
 
     public KeyEventHandler(MouseEventService service) {
         this.context = service;
-        this.mouseEventService = service;
-        this.appPreferences = new AppPreferences(context);
     }
 
     public void handleKeyEvent(KeyEvent event) {
-        if (event.getEventTime() - event.getDownTime() > 1000) {
-            showChangeBossKeyDialog(event.getKeyCode());
+        if (!KeyDetection.isActive()) {
+            lastKeyCode = -1;
+            holdBroadcast = false;
+            return;
         }
-    }
 
-    private void showChangeBossKeyDialog(int keyCode) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(context, R.style.Wolf_Alert_Disp);
-        builder.setTitle(R.string.confirm_changes_title);
-        builder.setMessage(context.getString(R.string.confirm_set_boss_key_message, keyCode));
-        builder.setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                appPreferences.setBossKeyDisabled(false);
-                appPreferences.setOverrideStatus(true);
-                appPreferences.setBossKeyValue(keyCode);
-                mouseEventService.updatePreferences();
-                Toast.makeText(context, context.getString(R.string.new_boss_key_toast, keyCode), Toast.LENGTH_SHORT).show();
-                dialogInterface.dismiss();
+        if (event.getAction() == KeyEvent.ACTION_DOWN) {
+            boolean heldLongEnough = event.getEventTime() - event.getDownTime() > 1000;
+            if (heldLongEnough
+                    && (!holdBroadcast || lastKeyCode != event.getKeyCode())) {
+                lastKeyCode = event.getKeyCode();
+                holdBroadcast = true;
+                Intent intent = new Intent(KeyDetection.ACTION_KEY_HOLD);
+                intent.putExtra(KeyDetection.EXTRA_KEY_CODE, event.getKeyCode());
+                LocalBroadcastManager.getInstance(context).sendBroadcast(intent);
             }
-        });
-        builder.setNegativeButton(R.string.no, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int whichButton) {
-                dialog.dismiss();
-            }
-        });
-        AlertDialog alert = builder.create();
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-            alert.getWindow().setType(WindowManager.LayoutParams.TYPE_SYSTEM_ALERT);
+        } else if (event.getAction() == KeyEvent.ACTION_UP) {
+            lastKeyCode = -1;
+            holdBroadcast = false;
         }
-        alert.show();
     }
 }
